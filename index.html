@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student CRUD App</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body{
+            font-family: Arial,sans-serif;
+            max-width:1000px;
+            margin:auto;
+            padding:20px;
+        }
+
+        input{
+            padding:10px;
+            margin:5px;
+            width:200px;
+        }
+
+        button{
+            padding:10px 15px;
+            cursor:pointer;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+            margin-top:20px;
+        }
+
+        th,td{
+            border:1px solid #ddd;
+            padding:10px;
+        }
+
+        th{
+            background:#f4f4f4;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Student Management System</h2>
+
+<input type="hidden" id="studentId">
+
+<input type="text" id="name" placeholder="Name">
+<input type="text" id="class" placeholder="Class">
+<input type="text" id="address" placeholder="Address">
+<input type="number" id="age" placeholder="Age">
+
+<button onclick="saveStudent()">Save</button>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Class</th>
+            <th>Address</th>
+            <th>Age</th>
+            <th>Created</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody id="studentTable"></tbody>
+</table>
+
+<script>
+
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+const supabase = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+loadStudents();
+
+async function loadStudents(){
+
+    const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .order('id',{ascending:true});
+
+    if(error){
+        console.log(error);
+        return;
+    }
+
+    const table = document.getElementById('studentTable');
+    table.innerHTML='';
+
+    data.forEach(student => {
+
+        table.innerHTML += `
+        <tr>
+            <td>${student.id}</td>
+            <td>${student.name}</td>
+            <td>${student.class}</td>
+            <td>${student.address}</td>
+            <td>${student.age}</td>
+            <td>${new Date(student.created_at).toLocaleString()}</td>
+            <td>
+                <button onclick="editStudent(${student.id},
+                '${student.name}',
+                '${student.class}',
+                '${student.address}',
+                ${student.age})">
+                Edit
+                </button>
+
+                <button onclick="deleteStudent(${student.id})">
+                Delete
+                </button>
+            </td>
+        </tr>
+        `;
+    });
+}
+
+async function saveStudent(){
+
+    const id = document.getElementById('studentId').value;
+
+    const student = {
+        name: document.getElementById('name').value,
+        class: document.getElementById('class').value,
+        address: document.getElementById('address').value,
+        age: parseInt(document.getElementById('age').value)
+    };
+
+    if(id){
+
+        await supabase
+            .from('students')
+            .update(student)
+            .eq('id', id);
+
+    }else{
+
+        await supabase
+            .from('students')
+            .insert([student]);
+    }
+
+    clearForm();
+    loadStudents();
+}
+
+function editStudent(id,name,className,address,age){
+
+    document.getElementById('studentId').value = id;
+    document.getElementById('name').value = name;
+    document.getElementById('class').value = className;
+    document.getElementById('address').value = address;
+    document.getElementById('age').value = age;
+}
+
+async function deleteStudent(id){
+
+    if(!confirm("Delete this record?")) return;
+
+    await supabase
+        .from('students')
+        .delete()
+        .eq('id', id);
+
+    loadStudents();
+}
+
+function clearForm(){
+
+    document.getElementById('studentId').value='';
+    document.getElementById('name').value='';
+    document.getElementById('class').value='';
+    document.getElementById('address').value='';
+    document.getElementById('age').value='';
+}
+
+</script>
+
+</body>
+</html>
